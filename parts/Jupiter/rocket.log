@@ -2,8 +2,10 @@
 ========= Conversion from Blender to Babylon.js =========
 	Python World class constructor completed
 	processing begun of material:  rocket.Material.001
+	processing begun of material:  rocket.Material.002
+	processing begun of material:  rocket.Material.003
+	processing begun of material:  rocket.Material.004
 	processing begun of mesh:  Engine
-		WARNING:  No materials have been assigned: 
 		num positions      :  224
 		num normals        :  224
 		num uvs            :  0
@@ -11,7 +13,6 @@
 		num colors         :  0
 		num indices        :  1332
 	processing begun of mesh:  Stage
-		WARNING:  No materials have been assigned: 
 		num positions      :  64
 		num normals        :  64
 		num uvs            :  0
@@ -19,7 +20,6 @@
 		num colors         :  0
 		num indices        :  372
 	processing begun of mesh:  Capsule
-		WARNING:  No materials have been assigned: 
 		num positions      :  33
 		num normals        :  33
 		num uvs            :  0

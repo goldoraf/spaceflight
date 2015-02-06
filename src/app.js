@@ -1,4 +1,5 @@
 import {VehicleView} from './views/VehicleView';
+import {AssemblyView} from './views/AssemblyView';
 import {MapView} from './views/MapView';
 
 var currentView,
@@ -19,7 +20,14 @@ document.getElementById('mapBtn').addEventListener('click', function(e) {
     currentView.setup();
 });
 
-currentView = new VehicleView(engine, canvas);
+document.getElementById('assemblyBtn').addEventListener('click', function(e) {
+    e.preventDefault();
+    currentView.teardown();
+    currentView = new AssemblyView(engine, canvas);
+    currentView.setup();
+});
+
+currentView = new AssemblyView(engine, canvas);
 currentView.setup();
 
 window.addEventListener('resize', function() {

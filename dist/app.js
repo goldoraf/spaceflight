@@ -18,21 +18,21 @@ var PartsWarehouse = (function () {
                 meshName: "Capsule",
                 nodes: {
                     top: [0, 1, 0],
-                    down: [0, -1, 0]
+                    bottom: [0, -1, 0]
                 }
             }, {
                 name: "J1",
                 meshName: "Stage",
                 nodes: {
                     top: [0, 3.5, 0],
-                    down: [0, -3.5, 0]
+                    bottom: [0, -3.5, 0]
                 }
             }, {
                 name: "H1",
                 meshName: "Engine",
                 nodes: {
                     top: [0, 0.13, 0],
-                    down: [0, -1.1, 0]
+                    bottom: [0, -1.1, 0]
                 }
             }]
         }];
@@ -113,6 +113,7 @@ exports.__esModule = true;
 "use strict";
 
 var VehicleView = require("./views/VehicleView").VehicleView;
+var AssemblyView = require("./views/AssemblyView").AssemblyView;
 var MapView = require("./views/MapView").MapView;
 
 
@@ -134,14 +135,262 @@ document.getElementById("mapBtn").addEventListener("click", function (e) {
     currentView.setup();
 });
 
-currentView = new VehicleView(engine, canvas);
+document.getElementById("assemblyBtn").addEventListener("click", function (e) {
+    e.preventDefault();
+    currentView.teardown();
+    currentView = new AssemblyView(engine, canvas);
+    currentView.setup();
+});
+
+currentView = new AssemblyView(engine, canvas);
 currentView.setup();
 
 window.addEventListener("resize", function () {
     engine.resize();
 });
 
-},{"./views/MapView":3,"./views/VehicleView":4}],3:[function(require,module,exports){
+},{"./views/AssemblyView":3,"./views/MapView":4,"./views/VehicleView":5}],3:[function(require,module,exports){
+"use strict";
+
+var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var PartsWarehouse = require("../PartsWarehouse").PartsWarehouse;
+var AssemblyView = (function () {
+    function AssemblyView(engine, canvas) {
+        _classCallCheck(this, AssemblyView);
+
+        this.engine = engine;
+        this.canvas = canvas;
+        this.scene = new BABYLON.Scene(engine);
+        this.warehouse = new PartsWarehouse();
+
+        this.camera = new BABYLON.ArcRotateCamera("Camera", 0, 0, 10, new BABYLON.Vector3(0, 0, 0), this.scene);
+        this.camera.setPosition(new BABYLON.Vector3(2, 20, 40));
+        this.camera.attachControl(this.canvas, true);
+
+        this.ground = BABYLON.Mesh.CreateGround("ground", 50, 50, 1, this.scene, false);
+        var groundMaterial = new BABYLON.StandardMaterial("ground", this.scene);
+        groundMaterial.specularColor = BABYLON.Color3.Black();
+        this.ground.material = groundMaterial;
+
+        this.activePart = null;
+        this.dragStartingPoint = null;
+    }
+
+    _prototypeProperties(AssemblyView, null, {
+        setup: {
+            value: function setup() {
+                var scene = this.scene;
+
+                this.warehouse.loadIntoScene(scene, this.onReady.bind(this));
+
+                var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
+                light.intensity = 0.7;
+
+                this.engine.runRenderLoop(function () {
+                    scene.render();
+                });
+            },
+            writable: true,
+            configurable: true
+        },
+        onReady: {
+            value: function onReady() {
+                var _this = this;
+                var scene = this.scene;
+
+                this.warehouse.parts.map(function (p) {
+                    return p.name;
+                }).forEach(function (name, i) {
+                    return _this.pickPart(name, new BABYLON.Vector3(i * 10, 10, 0));
+                }, this);
+
+                this.listeners = {
+                    down: this.onPointerDown.bind(this),
+                    up: this.onPointerUp.bind(this),
+                    move: this.onPointerMove.bind(this)
+                };
+                this.canvas.addEventListener("pointerdown", this.listeners.down, false);
+                this.canvas.addEventListener("pointerup", this.listeners.up, false);
+                this.canvas.addEventListener("pointermove", this.listeners.move, false);
+            },
+            writable: true,
+            configurable: true
+        },
+        pickPart: {
+            value: function pickPart(partName, position) {
+                var mesh = this.warehouse.getPartClone(partName, partName + "1");
+                mesh.position = position;
+                mesh.visibility = 0.5;
+
+                mesh.actionManager = new BABYLON.ActionManager(this.scene);
+                var highlightCondition = new BABYLON.PredicateCondition(mesh.actionManager, function () {
+                    return mesh.visibility == 1;
+                });
+                mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh.material, "emissiveColor", BABYLON.Color3.Red(), !highlightCondition));
+                mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOverTrigger, mesh.material, "emissiveColor", BABYLON.Color3.Green(), highlightCondition));
+                mesh.actionManager.registerAction(new BABYLON.SetValueAction(BABYLON.ActionManager.OnPointerOutTrigger, mesh.material, "emissiveColor", mesh.material.emissiveColor));
+            },
+            writable: true,
+            configurable: true
+        },
+        getGroundPosition: {
+            value: function getGroundPosition(evt) {
+                var ground = this.ground,
+                    pickInfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, function (mesh) {
+                    return mesh == ground;
+                });
+
+                return pickInfo.hit ? pickInfo.pickedPoint : null;
+            },
+            writable: true,
+            configurable: true
+        },
+        getPickedPart: {
+            value: function getPickedPart(evt) {
+                // check if we are under a mesh
+                // TODO: check that the picked mesh is a part and not a mesh from the VAB scene
+                var ground = this.ground,
+                    pickInfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, function (mesh) {
+                    return mesh !== ground;
+                });
+
+                return pickInfo.hit ? pickInfo.pickedMesh : null;
+            },
+            writable: true,
+            configurable: true
+        },
+        activatePart: {
+            value: function activatePart(part) {
+                this.desactivatePart(this.activePart);
+                this.activePart = part;
+                part.visibility = 1;
+                if (!part.nodeMeshes) part.nodeMeshes = [];
+
+                var scene = this.scene,
+                    meta = this.warehouse.getPartMetadata(part.name.slice(0, -1)); // TODO: all parts are suffixed with '1'. Not ideal...
+
+                ["top", "bottom"].forEach(function (placement) {
+                    if (meta.nodes[placement]) {
+                        var sphere = BABYLON.Mesh.CreateSphere(part.name + "_" + placement + "_node", 10, 1, scene);
+                        sphere.parent = part;
+                        sphere.position.y = meta.nodes[placement][1]; // TODO: all axis...
+                        part.nodeMeshes.push(sphere);
+                    }
+                });
+            },
+            writable: true,
+            configurable: true
+        },
+        desactivatePart: {
+            value: function desactivatePart(part) {
+                if (!part) return;
+                part.visibility = 0.5;
+                part.nodeMeshes.forEach(function (node) {
+                    return node.dispose();
+                });
+            },
+            writable: true,
+            configurable: true
+        },
+        onPointerDown: {
+            value: function onPointerDown(evt) {
+                if (evt.button != 0) {
+                    return;
+                }
+
+                var pickedPart = this.getPickedPart(evt);
+                if (pickedPart) {
+                    this.activatePart(pickedPart);
+                    this.setupPartDrag(evt);
+                }
+            },
+            writable: true,
+            configurable: true
+        },
+        setupPartDrag: {
+            value: function setupPartDrag(evt) {
+                this.dragStartingPoint = this.getGroundPosition(evt);
+                if (this.dragStartingPoint) {
+                    // we need to disconnect camera from canvas
+                    var camera = this.camera,
+                        canvas = this.canvas;
+                    setTimeout(function () {
+                        camera.detachControl(canvas);
+                    }, 0);
+                }
+            },
+            writable: true,
+            configurable: true
+        },
+        isDragging: {
+            value: function isDragging() {
+                return this.dragStartingPoint !== null;
+            },
+            writable: true,
+            configurable: true
+        },
+        onPointerUp: {
+            value: function onPointerUp() {
+                if (this.isDragging()) {
+                    this.onDrop();
+                    return;
+                }
+            },
+            writable: true,
+            configurable: true
+        },
+        onDrop: {
+            value: function onDrop() {
+                this.camera.attachControl(this.canvas);
+                this.dragStartingPoint = null;
+            },
+            writable: true,
+            configurable: true
+        },
+        onPointerMove: {
+            value: function onPointerMove(evt) {
+                if (!this.isDragging()) {
+                    return;
+                }
+
+                this.onDrag(evt);
+            },
+            writable: true,
+            configurable: true
+        },
+        onDrag: {
+            value: function onDrag(evt) {
+                var current = this.getGroundPosition(evt);
+                if (!current) return;
+
+                var diff = current.subtract(this.dragStartingPoint);
+                this.activePart.position.addInPlace(diff);
+                this.dragStartingPoint = current;
+            },
+            writable: true,
+            configurable: true
+        },
+        teardown: {
+            value: function teardown() {
+                this.canvas.removeEventListener("pointerdown", this.listeners.down);
+                this.canvas.removeEventListener("pointerup", this.listeners.up);
+                this.canvas.removeEventListener("pointermove", this.listeners.move);
+            },
+            writable: true,
+            configurable: true
+        }
+    });
+
+    return AssemblyView;
+})();
+
+exports.AssemblyView = AssemblyView;
+exports.__esModule = true;
+
+},{"../PartsWarehouse":1}],4:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -206,7 +455,7 @@ var MapView = (function () {
 exports.MapView = MapView;
 exports.__esModule = true;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -273,7 +522,7 @@ var VehicleView = (function () {
 
                     switch (relativePlacement) {
                         case "bottom":
-                            mesh.position.y = parentMeta.nodes.down[1] - meta.nodes.top[1];
+                            mesh.position.y = parentMeta.nodes.bottom[1] - meta.nodes.top[1];
                             break;
                     }
                 }

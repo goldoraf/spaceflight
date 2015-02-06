@@ -59,7 +59,7 @@ class VehicleView {
 
             switch(relativePlacement) {
                 case 'bottom':
-                    mesh.position.y = parentMeta.nodes.down[1] - meta.nodes.top[1];
+                    mesh.position.y = parentMeta.nodes.bottom[1] - meta.nodes.top[1];
                     break;
             }
         }

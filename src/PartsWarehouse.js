@@ -11,7 +11,7 @@ class PartsWarehouse {
                         meshName: 'Capsule',
                         nodes: {
                             top: [0, 1.0, 0],
-                            down: [0, -1.0, 0]
+                            bottom: [0, -1.0, 0]
                         }
                     },
                     {
@@ -19,7 +19,7 @@ class PartsWarehouse {
                         meshName: 'Stage',
                         nodes: {
                             top: [0, 3.5, 0],
-                            down: [0, -3.5, 0]
+                            bottom: [0, -3.5, 0]
                         }
                     },
                     {
@@ -27,7 +27,7 @@ class PartsWarehouse {
                         meshName: 'Engine',
                         nodes: {
                             top: [0, 0.13, 0],
-                            down: [0, -1.10, 0]
+                            bottom: [0, -1.10, 0]
                         }
                     }
                 ]
