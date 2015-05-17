@@ -18,8 +18,10 @@ class PartsWarehouse {
                         name: 'J1',
                         meshName: 'Stage',
                         nodes: {
-                            top: [0, 3.5, 0],
-                            bottom: [0, -3.5, 0]
+                            left: [1, 0, 0],
+                            right: [-1, 0, 0],
+                            front: [0, 0, -1],
+                            back: [0, 0, 1],
                         }
                     },
                     {
@@ -50,7 +52,7 @@ class PartsWarehouse {
 
         this.packages.forEach(function(pkg) {
             var that = this;
-            BABYLON.SceneLoader.ImportMesh('', '../parts/' + pkg.folder + '/', pkg.meshFile, scene, 
+            BABYLON.SceneLoader.ImportMesh('', '../parts/' + pkg.folder + '/', pkg.meshFile, scene,
                                            function (newMeshes, particleSystems) {
                 pkg.parts.forEach(function(part) {
                     var potentialMesh = newMeshes.filter(m => m.name == part.meshName).shift();
