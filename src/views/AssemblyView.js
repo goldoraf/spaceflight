@@ -46,6 +46,8 @@ class AssemblyView {
         this.canvas.addEventListener("pointerdown", this.listeners.down, false);
         this.canvas.addEventListener("pointerup", this.listeners.up, false);
         this.canvas.addEventListener("pointermove", this.listeners.move, false);
+
+        this.canvas.oncontextmenu = function() { return false; };
     }
 
     pickPart(partName, position) {
