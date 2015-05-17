@@ -18,6 +18,8 @@ class PartsWarehouse {
                         name: 'J1',
                         meshName: 'Stage',
                         nodes: {
+                            top: [0, 3.5, 0],
+                            bottom: [0, -3.5, 0],
                             left: [1, 0, 0],
                             right: [-1, 0, 0],
                             front: [0, 0, -1],
