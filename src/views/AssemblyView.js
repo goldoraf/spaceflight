@@ -114,9 +114,10 @@ class AssemblyView {
     }
 
     onPointerDown(evt) {
-        if (evt.button != 0) {
+        if (evt.button != 0 && evt.button != 2) {
             return;
         }
+        this.current_button = evt.button; // Save button for Y translation use
 
         var pickedPart = this.getPickedPart(evt);
         if (pickedPart) {
@@ -132,6 +133,7 @@ class AssemblyView {
             setTimeout(function () {
                 camera.detachControl(canvas);
             }, 0);
+
         }
     }
 
@@ -163,9 +165,14 @@ class AssemblyView {
         var current = this.getGroundPosition(evt);
         if (!current) return;
 
-        var diff = current.subtract(this.dragStartingPoint);
-        this.activePart.position.addInPlace(diff);
-        this.dragStartingPoint = current;
+        if (this.current_button == 0) {
+            var diff = current.subtract(this.dragStartingPoint);
+            this.activePart.position.addInPlace(diff);
+            this.dragStartingPoint = current;
+        }
+        else if (this.current_button == 2 && current.x > 0){ // TODO: replace this nasty code for better ground colision detect
+            this.activePart.position.y = current.x; // Set the Y translation with X value, for better maniability
+        }
     }
 
     teardown() {
