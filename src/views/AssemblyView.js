@@ -35,7 +35,7 @@ class AssemblyView {
 
     onReady() {
         var scene = this.scene;
-        
+
         this.warehouse.parts.map(p => p.name).forEach((name, i) => this.pickPart(name, new BABYLON.Vector3(i*10, 10, 0)), this);
 
         this.listeners = {
@@ -71,7 +71,7 @@ class AssemblyView {
     getGroundPosition(evt) {
         var ground = this.ground,
             pickInfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, mesh => mesh == ground);
-        
+
         return pickInfo.hit ? pickInfo.pickedPoint : null;
     }
 
@@ -92,12 +92,14 @@ class AssemblyView {
 
         var scene = this.scene,
             meta = this.warehouse.getPartMetadata(part.name.slice(0, -1)); // TODO: all parts are suffixed with '1'. Not ideal...
-        
-        ['top', 'bottom'].forEach(function(placement) {
+
+        ['top', 'bottom', 'left', 'right', 'front', 'back'].forEach(function(placement) {
             if (meta.nodes[placement]) {
                 var sphere = BABYLON.Mesh.CreateSphere(part.name + '_' + placement + '_node', 10, 1, scene);
                 sphere.parent = part;
-                sphere.position.y = meta.nodes[placement][1]; // TODO: all axis...
+                sphere.position.x = meta.nodes[placement][0];
+                sphere.position.y = meta.nodes[placement][1];
+                sphere.position.z = meta.nodes[placement][2];
                 part.nodeMeshes.push(sphere);
             }
         });
