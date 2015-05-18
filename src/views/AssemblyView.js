@@ -35,7 +35,7 @@ class AssemblyView {
 
     onReady() {
         var scene = this.scene;
-        
+
         this.warehouse.parts.map(p => p.name).forEach((name, i) => this.pickPart(name, new BABYLON.Vector3(i*10, 10, 0)), this);
 
         this.listeners = {
@@ -46,6 +46,8 @@ class AssemblyView {
         this.canvas.addEventListener("pointerdown", this.listeners.down, false);
         this.canvas.addEventListener("pointerup", this.listeners.up, false);
         this.canvas.addEventListener("pointermove", this.listeners.move, false);
+
+        this.canvas.oncontextmenu = function() { return false; };
     }
 
     pickPart(partName, position) {
@@ -71,7 +73,7 @@ class AssemblyView {
     getGroundPosition(evt) {
         var ground = this.ground,
             pickInfo = this.scene.pick(this.scene.pointerX, this.scene.pointerY, mesh => mesh == ground);
-        
+
         return pickInfo.hit ? pickInfo.pickedPoint : null;
     }
 
@@ -92,12 +94,14 @@ class AssemblyView {
 
         var scene = this.scene,
             meta = this.warehouse.getPartMetadata(part.name.slice(0, -1)); // TODO: all parts are suffixed with '1'. Not ideal...
-        
-        ['top', 'bottom'].forEach(function(placement) {
+
+        ['top', 'bottom', 'left', 'right', 'front', 'back'].forEach(function(placement) {
             if (meta.nodes[placement]) {
                 var sphere = BABYLON.Mesh.CreateSphere(part.name + '_' + placement + '_node', 10, 1, scene);
                 sphere.parent = part;
-                sphere.position.y = meta.nodes[placement][1]; // TODO: all axis...
+                sphere.position.x = meta.nodes[placement][0];
+                sphere.position.y = meta.nodes[placement][1];
+                sphere.position.z = meta.nodes[placement][2];
                 part.nodeMeshes.push(sphere);
             }
         });
@@ -110,9 +114,10 @@ class AssemblyView {
     }
 
     onPointerDown(evt) {
-        if (evt.button != 0) {
+        if (evt.button != 0 && evt.button != 2) {
             return;
         }
+        this.current_button = evt.button; // Save button for Y translation use
 
         var pickedPart = this.getPickedPart(evt);
         if (pickedPart) {
@@ -128,6 +133,7 @@ class AssemblyView {
             setTimeout(function () {
                 camera.detachControl(canvas);
             }, 0);
+
         }
     }
 
@@ -159,9 +165,14 @@ class AssemblyView {
         var current = this.getGroundPosition(evt);
         if (!current) return;
 
-        var diff = current.subtract(this.dragStartingPoint);
-        this.activePart.position.addInPlace(diff);
-        this.dragStartingPoint = current;
+        if (this.current_button == 0) {
+            var diff = current.subtract(this.dragStartingPoint);
+            this.activePart.position.addInPlace(diff);
+            this.dragStartingPoint = current;
+        }
+        else if (this.current_button == 2 && current.x > 0){ // TODO: replace this nasty code for better ground colision detect
+            this.activePart.position.y = current.x; // Set the Y translation with X value, for better maniability
+        }
     }
 
     teardown() {
