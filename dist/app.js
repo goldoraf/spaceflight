@@ -25,8 +25,11 @@ var PartsWarehouse = (function () {
                 meshName: "Stage",
                 nodes: {
                     top: [0, 3.5, 0],
-                    bottom: [0, -3.5, 0]
-                }
+                    bottom: [0, -3.5, 0],
+                    left: [1, 0, 0],
+                    right: [-1, 0, 0],
+                    front: [0, 0, -1],
+                    back: [0, 0, 1] }
             }, {
                 name: "H1",
                 meshName: "Engine",
@@ -107,7 +110,9 @@ var PartsWarehouse = (function () {
 })();
 
 exports.PartsWarehouse = PartsWarehouse;
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
 },{}],2:[function(require,module,exports){
 "use strict";
@@ -215,6 +220,10 @@ var AssemblyView = (function () {
                 this.canvas.addEventListener("pointerdown", this.listeners.down, false);
                 this.canvas.addEventListener("pointerup", this.listeners.up, false);
                 this.canvas.addEventListener("pointermove", this.listeners.move, false);
+
+                this.canvas.oncontextmenu = function () {
+                    return false;
+                };
             },
             writable: true,
             configurable: true
@@ -272,11 +281,13 @@ var AssemblyView = (function () {
                 var scene = this.scene,
                     meta = this.warehouse.getPartMetadata(part.name.slice(0, -1)); // TODO: all parts are suffixed with '1'. Not ideal...
 
-                ["top", "bottom"].forEach(function (placement) {
+                ["top", "bottom", "left", "right", "front", "back"].forEach(function (placement) {
                     if (meta.nodes[placement]) {
                         var sphere = BABYLON.Mesh.CreateSphere(part.name + "_" + placement + "_node", 10, 1, scene);
                         sphere.parent = part;
-                        sphere.position.y = meta.nodes[placement][1]; // TODO: all axis...
+                        sphere.position.x = meta.nodes[placement][0];
+                        sphere.position.y = meta.nodes[placement][1];
+                        sphere.position.z = meta.nodes[placement][2];
                         part.nodeMeshes.push(sphere);
                     }
                 });
@@ -286,8 +297,9 @@ var AssemblyView = (function () {
         },
         desactivatePart: {
             value: function desactivatePart(part) {
-                if (!part) return;
-                part.visibility = 0.5;
+                if (!part) {
+                    return;
+                }part.visibility = 0.5;
                 part.nodeMeshes.forEach(function (node) {
                     return node.dispose();
                 });
@@ -297,9 +309,10 @@ var AssemblyView = (function () {
         },
         onPointerDown: {
             value: function onPointerDown(evt) {
-                if (evt.button != 0) {
+                if (evt.button != 0 && evt.button != 2) {
                     return;
                 }
+                this.current_button = evt.button; // Save button for Y translation use
 
                 var pickedPart = this.getPickedPart(evt);
                 if (pickedPart) {
@@ -364,11 +377,16 @@ var AssemblyView = (function () {
         onDrag: {
             value: function onDrag(evt) {
                 var current = this.getGroundPosition(evt);
-                if (!current) return;
-
-                var diff = current.subtract(this.dragStartingPoint);
-                this.activePart.position.addInPlace(diff);
-                this.dragStartingPoint = current;
+                if (!current) {
+                    return;
+                }if (this.current_button == 0) {
+                    var diff = current.subtract(this.dragStartingPoint);
+                    this.activePart.position.addInPlace(diff);
+                    this.dragStartingPoint = current;
+                } else if (this.current_button == 2 && current.x > 0) {
+                    // TODO: replace this nasty code for better ground colision detect
+                    this.activePart.position.y = current.x; // Set the Y translation with X value, for better maniability
+                }
             },
             writable: true,
             configurable: true
@@ -388,7 +406,9 @@ var AssemblyView = (function () {
 })();
 
 exports.AssemblyView = AssemblyView;
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
 },{"../PartsWarehouse":1}],4:[function(require,module,exports){
 "use strict";
@@ -453,7 +473,9 @@ var MapView = (function () {
 })();
 
 exports.MapView = MapView;
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
 },{}],5:[function(require,module,exports){
 "use strict";
@@ -529,8 +551,9 @@ var VehicleView = (function () {
 
                 mesh.visibility = 1;
 
-                if (part.link === undefined) return;
-                ["top", "bottom"].forEach(function (placement) {
+                if (part.link === undefined) {
+                    return;
+                }["top", "bottom"].forEach(function (placement) {
                     if (part.link[placement]) {
                         var childPart = this.vehicle.parts[this.index.indexOf(part.link[placement])];
                         this.recursiveBuild(childPart, mesh, placement);
@@ -630,6 +653,8 @@ var VehicleView = (function () {
 })();
 
 exports.VehicleView = VehicleView;
-exports.__esModule = true;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
 
 },{"../PartsWarehouse":1}]},{},[2]);
