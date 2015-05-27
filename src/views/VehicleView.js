@@ -113,7 +113,8 @@ class VehicleView {
             engineMeta = this.warehouse.getPartMetadata(enginePartName),
             engineMesh = this.scene.getMeshByName(this.vehicleEngine);
 
-        var exhaust = new EngineExhaust(this.scene, engineMesh);
+        //var exhaust = new EngineExhaust(this.scene, engineMesh);
+        var exhaust = new EngineExhaust(this.scene, this.scene.getMeshByName('Jupiter_J11'));
     }
 
     teardown() {
