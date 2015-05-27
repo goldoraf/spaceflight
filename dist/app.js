@@ -154,7 +154,127 @@ window.addEventListener("resize", function () {
     engine.resize();
 });
 
-},{"./views/AssemblyView":3,"./views/MapView":4,"./views/VehicleView":5}],3:[function(require,module,exports){
+},{"./views/AssemblyView":4,"./views/MapView":5,"./views/VehicleView":6}],3:[function(require,module,exports){
+"use strict";
+
+var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var EngineExhaust = (function () {
+    function EngineExhaust(scene, engineMesh) {
+        _classCallCheck(this, EngineExhaust);
+
+        this.particles = [];
+        this.particles.push(this.mainExhaust(scene, engineMesh));
+        this.particles.push(this.smoke(scene, engineMesh));
+
+        this.particles.forEach(function (particleSystem) {
+            particleSystem.start();
+        });
+    }
+
+    _prototypeProperties(EngineExhaust, null, {
+        mainExhaust: {
+            value: function mainExhaust(scene, engineMesh) {
+                var particleSystem = new BABYLON.ParticleSystem("particles", 5000, scene);
+                particleSystem.particleTexture = new BABYLON.Texture("../textures/particles/flare.png", scene);
+                // Colors of all particles
+                //particleSystem.color1 = new BABYLON.Color4(0.7, 0.8, 1.0, 1.0);
+                //particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 1.0);
+                //particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
+
+                // Size of each particle (random between...
+                particleSystem.minSize = 0.1;
+                particleSystem.maxSize = 0.5;
+
+                // Life time of each particle (random between...
+                particleSystem.minLifeTime = 0.3;
+                particleSystem.maxLifeTime = 1.5;
+
+                // Emission rate
+                particleSystem.emitRate = 3000;
+
+                // Blend mode : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
+                particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+
+                // Set the gravity of all particles
+                particleSystem.gravity = new BABYLON.Vector3(0, -9.81, 0);
+
+                // Direction of each particle after it has been emitted
+                particleSystem.direction1 = new BABYLON.Vector3(0, -1, 0);
+                particleSystem.direction2 = new BABYLON.Vector3(0, -1, 0);
+
+                // Angular speed, in radians
+                particleSystem.minAngularSpeed = 0;
+                particleSystem.maxAngularSpeed = Math.PI;
+
+                // Speed
+                particleSystem.minEmitPower = 1000;
+                particleSystem.maxEmitPower = 3000;
+                particleSystem.updateSpeed = 0.005;
+
+                particleSystem.emitter = engineMesh;
+                //particleSystem.minEmitBox = new BABYLON.Vector3(0, 0, 0); // Starting all from
+                //particleSystem.maxEmitBox = new BABYLON.Vector3(0, 0, 0); // To...
+
+                return particleSystem;
+            },
+            writable: true,
+            configurable: true
+        },
+        smoke: {
+            value: function smoke(scene, engineMesh) {
+                var particleSystem = new BABYLON.ParticleSystem("smoke", 2000, scene);
+                particleSystem.particleTexture = new BABYLON.Texture("../textures/particles/smoke.png", scene);
+
+                particleSystem.minSize = 0.5;
+                particleSystem.maxSize = 2;
+
+                particleSystem.minLifeTime = 1;
+                particleSystem.maxLifeTime = 2.5;
+
+                particleSystem.emitRate = 300;
+
+                // Blend mode : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
+                particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
+
+                // Set the gravity of all particles
+                particleSystem.gravity = new BABYLON.Vector3(0, -9.81, 0);
+
+                // Direction of each particle after it has been emitted
+                // particleSystem.direction1 = new BABYLON.Vector3(0.1, -1, 0);
+                // particleSystem.direction2 = new BABYLON.Vector3(-0.1, -1, 0);
+
+                // Angular speed, in radians
+                particleSystem.minAngularSpeed = 0;
+                particleSystem.maxAngularSpeed = Math.PI;
+
+                // Speed
+                particleSystem.minEmitPower = 100;
+                particleSystem.maxEmitPower = 300;
+                particleSystem.updateSpeed = 0.005;
+
+                particleSystem.emitter = engineMesh;
+                particleSystem.minEmitBox = new BABYLON.Vector3(0, 0, -15); // Starting all from
+                particleSystem.maxEmitBox = new BABYLON.Vector3(0, 0, -15); // To...
+
+                return particleSystem;
+            },
+            writable: true,
+            configurable: true
+        }
+    });
+
+    return EngineExhaust;
+})();
+
+exports.EngineExhaust = EngineExhaust;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+},{}],4:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -410,7 +530,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{"../PartsWarehouse":1}],4:[function(require,module,exports){
+},{"../PartsWarehouse":1}],5:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -477,7 +597,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -485,6 +605,7 @@ var _prototypeProperties = function (child, staticProps, instanceProps) { if (st
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
 var PartsWarehouse = require("../PartsWarehouse").PartsWarehouse;
+var EngineExhaust = require("../fx/EngineExhaust").EngineExhaust;
 var VehicleView = (function () {
     function VehicleView(engine, canvas) {
         _classCallCheck(this, VehicleView);
@@ -577,9 +698,10 @@ var VehicleView = (function () {
                 // Default intensity is 1. Let's dim the light a small amount
                 light.intensity = 0.7;
 
-                var xAxis = BABYLON.Mesh.CreateLines("xAxis", [new BABYLON.Vector3(-10, 0, 0), new BABYLON.Vector3(10, 0, 0)], scene);
-                var yAxis = BABYLON.Mesh.CreateLines("yAxis", [new BABYLON.Vector3(0, -10, 0), new BABYLON.Vector3(0, 10, 0)], scene);
-                var zAxis = BABYLON.Mesh.CreateLines("zAxis", [new BABYLON.Vector3(0, 0, -10), new BABYLON.Vector3(0, 0, 10)], scene);
+                var xAxis = BABYLON.Mesh.CreateLines("xAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(10, 0, 0)], scene);
+                var yAxis = BABYLON.Mesh.CreateLines("yAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 10, 0)], scene);
+                var zAxis = BABYLON.Mesh.CreateLines("zAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 0, 10)], scene);
+                xAxis.color = new BABYLON.Color3(255, 0, 0);
 
                 this.engine.runRenderLoop(function () {
                     scene.render();
@@ -594,48 +716,7 @@ var VehicleView = (function () {
                     engineMeta = this.warehouse.getPartMetadata(enginePartName),
                     engineMesh = this.scene.getMeshByName(this.vehicleEngine);
 
-                var particleSystem = new BABYLON.ParticleSystem("particles", 2000, this.scene);
-                particleSystem.particleTexture = new BABYLON.Texture("../textures/particles/flare.png", this.scene);
-                // Colors of all particles
-                particleSystem.color1 = new BABYLON.Color4(0.7, 0.8, 1, 1);
-                particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1, 1);
-                particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0);
-
-                // Size of each particle (random between...
-                particleSystem.minSize = 0.1;
-                particleSystem.maxSize = 0.5;
-
-                // Life time of each particle (random between...
-                particleSystem.minLifeTime = 0.3;
-                particleSystem.maxLifeTime = 1.5;
-
-                // Emission rate
-                particleSystem.emitRate = 1500;
-
-                // Blend mode : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
-                particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
-
-                // Set the gravity of all particles
-                particleSystem.gravity = new BABYLON.Vector3(0, -9.81, 0);
-
-                // Direction of each particle after it has been emitted
-                particleSystem.direction1 = new BABYLON.Vector3(-3, -8, 3);
-                particleSystem.direction2 = new BABYLON.Vector3(3, -8, -3);
-
-                // Angular speed, in radians
-                particleSystem.minAngularSpeed = 0;
-                particleSystem.maxAngularSpeed = Math.PI;
-
-                // Speed
-                particleSystem.minEmitPower = 1;
-                particleSystem.maxEmitPower = 3;
-                particleSystem.updateSpeed = 0.005;
-
-                particleSystem.emitter = engineMesh;
-                particleSystem.minEmitBox = new BABYLON.Vector3(0, 0, 0); // Starting all from
-                particleSystem.maxEmitBox = new BABYLON.Vector3(0, 0, 0); // To...
-
-                particleSystem.start();
+                var exhaust = new EngineExhaust(this.scene, engineMesh);
             },
             writable: true,
             configurable: true
@@ -657,4 +738,4 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{"../PartsWarehouse":1}]},{},[2]);
+},{"../PartsWarehouse":1,"../fx/EngineExhaust":3}]},{},[2]);

@@ -1,4 +1,5 @@
 import {PartsWarehouse} from '../PartsWarehouse';
+import {EngineExhaust} from '../fx/EngineExhaust';
 
 class VehicleView {
     constructor(engine, canvas) {
@@ -89,17 +90,18 @@ class VehicleView {
         light.intensity = 0.7;
 
         var xAxis = BABYLON.Mesh.CreateLines("xAxis", [
-            new BABYLON.Vector3(-10, 0, 0),
+            new BABYLON.Vector3(0, 0, 0),
             new BABYLON.Vector3(10, 0, 0)
         ], scene);
         var yAxis = BABYLON.Mesh.CreateLines("yAxis", [
-            new BABYLON.Vector3(0, -10, 0),
+            new BABYLON.Vector3(0, 0, 0),
             new BABYLON.Vector3(0, 10, 0)
         ], scene);
         var zAxis = BABYLON.Mesh.CreateLines("zAxis", [
-            new BABYLON.Vector3(0, 0, -10),
+            new BABYLON.Vector3(0, 0, 0),
             new BABYLON.Vector3(0, 0, 10)
         ], scene);
+        xAxis.color = new BABYLON.Color3(255, 0, 0);
 
         this.engine.runRenderLoop(function() {
             scene.render();
@@ -111,48 +113,7 @@ class VehicleView {
             engineMeta = this.warehouse.getPartMetadata(enginePartName),
             engineMesh = this.scene.getMeshByName(this.vehicleEngine);
 
-        var particleSystem = new BABYLON.ParticleSystem("particles", 2000, this.scene);
-        particleSystem.particleTexture = new BABYLON.Texture("../textures/particles/flare.png", this.scene);
-        // Colors of all particles
-        particleSystem.color1 = new BABYLON.Color4(0.7, 0.8, 1.0, 1.0);
-        particleSystem.color2 = new BABYLON.Color4(0.2, 0.5, 1.0, 1.0);
-        particleSystem.colorDead = new BABYLON.Color4(0, 0, 0.2, 0.0);
-
-        // Size of each particle (random between...
-        particleSystem.minSize = 0.1;
-        particleSystem.maxSize = 0.5;
-
-        // Life time of each particle (random between...
-        particleSystem.minLifeTime = 0.3;
-        particleSystem.maxLifeTime = 1.5;
-
-        // Emission rate
-        particleSystem.emitRate = 1500;
-
-        // Blend mode : BLENDMODE_ONEONE, or BLENDMODE_STANDARD
-        particleSystem.blendMode = BABYLON.ParticleSystem.BLENDMODE_ONEONE;
-
-        // Set the gravity of all particles
-        particleSystem.gravity = new BABYLON.Vector3(0, -9.81, 0);
-
-        // Direction of each particle after it has been emitted
-        particleSystem.direction1 = new BABYLON.Vector3(-3, -8, 3);
-        particleSystem.direction2 = new BABYLON.Vector3(3, -8, -3);
-
-        // Angular speed, in radians
-        particleSystem.minAngularSpeed = 0;
-        particleSystem.maxAngularSpeed = Math.PI;
-
-        // Speed
-        particleSystem.minEmitPower = 1;
-        particleSystem.maxEmitPower = 3;
-        particleSystem.updateSpeed = 0.005;
-        
-        particleSystem.emitter = engineMesh;
-        particleSystem.minEmitBox = new BABYLON.Vector3(0, 0, 0); // Starting all from
-        particleSystem.maxEmitBox = new BABYLON.Vector3(0, 0, 0); // To...
-
-        particleSystem.start();
+        var exhaust = new EngineExhaust(this.scene, engineMesh);
     }
 
     teardown() {
