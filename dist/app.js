@@ -147,7 +147,7 @@ document.getElementById("assemblyBtn").addEventListener("click", function (e) {
     currentView.setup();
 });
 
-currentView = new AssemblyView(engine, canvas);
+currentView = new VehicleView(engine, canvas);
 currentView.setup();
 
 window.addEventListener("resize", function () {
@@ -747,10 +747,11 @@ var VehicleView = (function () {
                 // Default intensity is 1. Let's dim the light a small amount
                 light.intensity = 0.7;
 
-                var xAxis = BABYLON.Mesh.CreateLines("xAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(10, 0, 0)], scene);
-                var yAxis = BABYLON.Mesh.CreateLines("yAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 10, 0)], scene);
-                var zAxis = BABYLON.Mesh.CreateLines("zAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 0, 10)], scene);
-                xAxis.color = new BABYLON.Color3(255, 0, 0);
+                this.addAxis(scene);
+                this.addSkydome(scene);
+                this.addLaunchpad(scene);
+
+                scene.enablePhysics(new BABYLON.Vector3(0, -10, 0), new BABYLON.OimoJSPlugin());
 
                 this.engine.runRenderLoop(function () {
                     scene.render();
@@ -767,6 +768,50 @@ var VehicleView = (function () {
 
                 //var exhaust = new EngineExhaust(this.scene, engineMesh);
                 var exhaust = new EngineExhaust(this.scene, this.scene.getMeshByName("Jupiter_J11"));
+            },
+            writable: true,
+            configurable: true
+        },
+        addAxis: {
+            value: function addAxis(scene) {
+                var xAxis = BABYLON.Mesh.CreateLines("xAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(10, 0, 0)], scene);
+                var yAxis = BABYLON.Mesh.CreateLines("yAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 10, 0)], scene);
+                var zAxis = BABYLON.Mesh.CreateLines("zAxis", [new BABYLON.Vector3(0, 0, 0), new BABYLON.Vector3(0, 0, 10)], scene);
+                xAxis.color = new BABYLON.Color3(255, 0, 0);
+            },
+            writable: true,
+            configurable: true
+        },
+        addSkydome: {
+            value: function addSkydome(scene) {
+                BABYLON.Engine.ShadersRepository = "../shaders/";
+
+                var skybox = BABYLON.Mesh.CreateSphere("skydome", 10, 2500, scene);
+
+                var shader = new BABYLON.ShaderMaterial("skydome", scene, "skydome", {});
+                shader.setFloat("offset", 0);
+                shader.setFloat("exponent", 0.6);
+                shader.setColor3("topColor", BABYLON.Color3.FromInts(0, 119, 255));
+                shader.setColor3("bottomColor", BABYLON.Color3.FromInts(240, 240, 255));
+                shader.backFaceCulling = false;
+                skybox.material = shader;
+            },
+            writable: true,
+            configurable: true
+        },
+        addLaunchpad: {
+            value: function addLaunchpad(scene) {
+                var mat = new BABYLON.StandardMaterial("ground", scene);
+                var t = new BABYLON.Texture("../textures/launchpad.jpg", scene);
+                t.uScale = t.vScale = 10;
+                mat.diffuseTexture = t;
+                mat.specularColor = BABYLON.Color3.Black();
+
+                var g = BABYLON.Mesh.CreateBox("ground", 400, scene);
+                g.position.y = -12;
+                g.scaling.y = 0.01;
+
+                g.material = mat;
             },
             writable: true,
             configurable: true

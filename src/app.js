@@ -27,7 +27,7 @@ document.getElementById('assemblyBtn').addEventListener('click', function(e) {
     currentView.setup();
 });
 
-currentView = new AssemblyView(engine, canvas);
+currentView = new VehicleView(engine, canvas);
 currentView.setup();
 
 window.addEventListener('resize', function() {
