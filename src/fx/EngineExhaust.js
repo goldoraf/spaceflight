@@ -4,7 +4,9 @@ class EngineExhaust {
         this.particles.push(this.mainExhaust(scene, engineMesh));
         this.particles.push(this.secondaryExhaust(scene, engineMesh));
         this.particles.push(this.smoke(scene, engineMesh));
+    }
 
+    start() {
         this.particles.forEach(function(particleSystem) {
             particleSystem.start();
         });

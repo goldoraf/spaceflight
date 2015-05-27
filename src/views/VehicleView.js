@@ -1,13 +1,13 @@
+import {Vehicle} from '../Vehicle';
 import {PartsWarehouse} from '../PartsWarehouse';
-import {EngineExhaust} from '../fx/EngineExhaust';
 
 class VehicleView {
     constructor(engine, canvas) {
         this.engine = engine;
         this.scene = new BABYLON.Scene(engine);
-        this.warehouse = new PartsWarehouse();
 
-        this.vehicle = {
+        this.warehouse = new PartsWarehouse();
+        this.vehicle = new Vehicle({
             name: 'Jupiter C',
             parts: [
                 {
@@ -29,60 +29,22 @@ class VehicleView {
                     part: 'Jupiter_H1'
                 }
             ]
-        };
-        this.index = [];
-        this.vehicle.parts.forEach(function(part, i) {
-            this.index[i] = part.name;
-        }, this);
-
-        this.vehicleEngine = 'Jupiter_H11';
+        });
 
         var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), this.scene);
         // This attaches the camera to the canvas
         camera.attachControl(canvas, true);
     }
 
-    recursiveBuild(part, parent, relativePlacement) {
-        if (!part) {
-            part = this.vehicle.parts[0];
-        }
-
-        var meta = this.warehouse.getPartMetadata(part.part),
-            mesh = this.warehouse.getPartClone(part.part, part.name, parent);
-
-        mesh.position.x = 0;
-        mesh.position.y = 0;
-        mesh.position.z = 0;
-
-        if (parent) {
-            var parentPartName = this.vehicle.parts[this.index.indexOf(parent.name)].part,
-                parentMeta = this.warehouse.getPartMetadata(parentPartName);
-
-            switch(relativePlacement) {
-                case 'bottom':
-                    mesh.position.y = parentMeta.nodes.bottom[1] - meta.nodes.top[1];
-                    break;
-            }
-        }
-
-        mesh.visibility = 1.0;
-
-        if (part.link === undefined) return;
-        ['top', 'bottom'].forEach(function(placement) {
-            if (part.link[placement]) {
-                var childPart = this.vehicle.parts[this.index.indexOf(part.link[placement])]
-                this.recursiveBuild(childPart, mesh, placement);
-            }
-        }, this);
-
-        this.attachEngineExhaust();
-    }
-
     setup() {
-        var scene = this.scene;
+        var scene = this.scene,
+            vehicle = this.vehicle,
+            warehouse = this.warehouse;
 
-        this.meshes = [];
-        this.warehouse.loadIntoScene(scene, this.recursiveBuild.bind(this));
+        warehouse.loadIntoScene(scene, function() {
+            vehicle.assemble(scene, warehouse);
+            vehicle.ignite();
+        });
 
         // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
         var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
@@ -93,20 +55,11 @@ class VehicleView {
         this.addSkydome(scene);
         this.addLaunchpad(scene);
 
-        scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.OimoJSPlugin());
+        //scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.OimoJSPlugin());
 
         this.engine.runRenderLoop(function() {
             scene.render();
         });
-    }
-
-    attachEngineExhaust() {
-        var enginePartName = this.vehicle.parts[this.index.indexOf(this.vehicleEngine)].part,
-            engineMeta = this.warehouse.getPartMetadata(enginePartName),
-            engineMesh = this.scene.getMeshByName(this.vehicleEngine);
-
-        //var exhaust = new EngineExhaust(this.scene, engineMesh);
-        var exhaust = new EngineExhaust(this.scene, this.scene.getMeshByName('Jupiter_J11'));
     }
 
     addAxis(scene) {

@@ -117,6 +117,96 @@ Object.defineProperty(exports, "__esModule", {
 },{}],2:[function(require,module,exports){
 "use strict";
 
+var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
+
+var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
+
+var EngineExhaust = require("./fx/EngineExhaust").EngineExhaust;
+var Vehicle = (function () {
+    function Vehicle(config) {
+        _classCallCheck(this, Vehicle);
+
+        this.config = config;
+        this.parts = {};
+        this.exhaust = null;
+    }
+
+    _prototypeProperties(Vehicle, null, {
+        assemble: {
+            value: function assemble(scene, warehouse) {
+                this.instantiateParts(warehouse);
+                this.assembleParts();
+                this.attachEngineExhaust(scene);
+            },
+            writable: true,
+            configurable: true
+        },
+        ignite: {
+            value: function ignite() {
+                this.exhaust.start();
+            },
+            writable: true,
+            configurable: true
+        },
+        attachEngineExhaust: {
+            value: function attachEngineExhaust(scene) {
+                this.exhaust = new EngineExhaust(scene, this.parts.Jupiter_J11.mesh);
+            },
+            writable: true,
+            configurable: true
+        },
+        instantiateParts: {
+            value: function instantiateParts(warehouse) {
+                this.config.parts.forEach(function (part) {
+                    part.meta = warehouse.getPartMetadata(part.part), part.mesh = warehouse.getPartClone(part.part, part.name);
+
+                    part.mesh.position.x = 0;
+                    part.mesh.position.y = 0;
+                    part.mesh.position.z = 0;
+
+                    part.mesh.visibility = 1;
+
+                    this.parts[part.name] = part;
+                }, this);
+            },
+            writable: true,
+            configurable: true
+        },
+        assembleParts: {
+            value: function assembleParts() {
+                this.config.parts.forEach(function (cfg) {
+                    if (cfg.link === undefined) return;
+                    ["top", "bottom"].forEach(function (placement) {
+                        if (cfg.link[placement]) {
+                            var part = this.parts[cfg.name],
+                                childPart = this.parts[cfg.link[placement]];
+
+                            childPart.mesh.parent = part.mesh;
+                            switch (placement) {
+                                case "bottom":
+                                    childPart.mesh.position.y = part.meta.nodes.bottom[1] - childPart.meta.nodes.top[1];
+                                    break;
+                            }
+                        }
+                    }, this);
+                }, this);
+            },
+            writable: true,
+            configurable: true
+        }
+    });
+
+    return Vehicle;
+})();
+
+exports.Vehicle = Vehicle;
+Object.defineProperty(exports, "__esModule", {
+    value: true
+});
+
+},{"./fx/EngineExhaust":4}],3:[function(require,module,exports){
+"use strict";
+
 var VehicleView = require("./views/VehicleView").VehicleView;
 var AssemblyView = require("./views/AssemblyView").AssemblyView;
 var MapView = require("./views/MapView").MapView;
@@ -154,7 +244,7 @@ window.addEventListener("resize", function () {
     engine.resize();
 });
 
-},{"./views/AssemblyView":4,"./views/MapView":5,"./views/VehicleView":6}],3:[function(require,module,exports){
+},{"./views/AssemblyView":5,"./views/MapView":6,"./views/VehicleView":7}],4:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -169,13 +259,18 @@ var EngineExhaust = (function () {
         this.particles.push(this.mainExhaust(scene, engineMesh));
         this.particles.push(this.secondaryExhaust(scene, engineMesh));
         this.particles.push(this.smoke(scene, engineMesh));
-
-        this.particles.forEach(function (particleSystem) {
-            particleSystem.start();
-        });
     }
 
     _prototypeProperties(EngineExhaust, null, {
+        start: {
+            value: function start() {
+                this.particles.forEach(function (particleSystem) {
+                    particleSystem.start();
+                });
+            },
+            writable: true,
+            configurable: true
+        },
         mainExhaust: {
             value: function mainExhaust(scene, engineMesh) {
                 var particleSystem = new BABYLON.ParticleSystem("mainExhaust", 5000, scene);
@@ -323,7 +418,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -579,7 +674,7 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{"../PartsWarehouse":1}],5:[function(require,module,exports){
+},{"../PartsWarehouse":1}],6:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
@@ -646,24 +741,24 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 "use strict";
 
 var _prototypeProperties = function (child, staticProps, instanceProps) { if (staticProps) Object.defineProperties(child, staticProps); if (instanceProps) Object.defineProperties(child.prototype, instanceProps); };
 
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
+var Vehicle = require("../Vehicle").Vehicle;
 var PartsWarehouse = require("../PartsWarehouse").PartsWarehouse;
-var EngineExhaust = require("../fx/EngineExhaust").EngineExhaust;
 var VehicleView = (function () {
     function VehicleView(engine, canvas) {
         _classCallCheck(this, VehicleView);
 
         this.engine = engine;
         this.scene = new BABYLON.Scene(engine);
-        this.warehouse = new PartsWarehouse();
 
-        this.vehicle = {
+        this.warehouse = new PartsWarehouse();
+        this.vehicle = new Vehicle({
             name: "Jupiter C",
             parts: [{
                 name: "Jupiter_CommandModule1",
@@ -681,13 +776,7 @@ var VehicleView = (function () {
                 name: "Jupiter_H11",
                 part: "Jupiter_H1"
             }]
-        };
-        this.index = [];
-        this.vehicle.parts.forEach(function (part, i) {
-            this.index[i] = part.name;
-        }, this);
-
-        this.vehicleEngine = "Jupiter_H11";
+        });
 
         var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), this.scene);
         // This attaches the camera to the canvas
@@ -695,52 +784,16 @@ var VehicleView = (function () {
     }
 
     _prototypeProperties(VehicleView, null, {
-        recursiveBuild: {
-            value: function recursiveBuild(part, parent, relativePlacement) {
-                if (!part) {
-                    part = this.vehicle.parts[0];
-                }
-
-                var meta = this.warehouse.getPartMetadata(part.part),
-                    mesh = this.warehouse.getPartClone(part.part, part.name, parent);
-
-                mesh.position.x = 0;
-                mesh.position.y = 0;
-                mesh.position.z = 0;
-
-                if (parent) {
-                    var parentPartName = this.vehicle.parts[this.index.indexOf(parent.name)].part,
-                        parentMeta = this.warehouse.getPartMetadata(parentPartName);
-
-                    switch (relativePlacement) {
-                        case "bottom":
-                            mesh.position.y = parentMeta.nodes.bottom[1] - meta.nodes.top[1];
-                            break;
-                    }
-                }
-
-                mesh.visibility = 1;
-
-                if (part.link === undefined) {
-                    return;
-                }["top", "bottom"].forEach(function (placement) {
-                    if (part.link[placement]) {
-                        var childPart = this.vehicle.parts[this.index.indexOf(part.link[placement])];
-                        this.recursiveBuild(childPart, mesh, placement);
-                    }
-                }, this);
-
-                this.attachEngineExhaust();
-            },
-            writable: true,
-            configurable: true
-        },
         setup: {
             value: function setup() {
-                var scene = this.scene;
+                var scene = this.scene,
+                    vehicle = this.vehicle,
+                    warehouse = this.warehouse;
 
-                this.meshes = [];
-                this.warehouse.loadIntoScene(scene, this.recursiveBuild.bind(this));
+                warehouse.loadIntoScene(scene, function () {
+                    vehicle.assemble(scene, warehouse);
+                    vehicle.ignite();
+                });
 
                 // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
                 var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
@@ -751,23 +804,11 @@ var VehicleView = (function () {
                 this.addSkydome(scene);
                 this.addLaunchpad(scene);
 
-                scene.enablePhysics(new BABYLON.Vector3(0, -10, 0), new BABYLON.OimoJSPlugin());
+                //scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.OimoJSPlugin());
 
                 this.engine.runRenderLoop(function () {
                     scene.render();
                 });
-            },
-            writable: true,
-            configurable: true
-        },
-        attachEngineExhaust: {
-            value: function attachEngineExhaust() {
-                var enginePartName = this.vehicle.parts[this.index.indexOf(this.vehicleEngine)].part,
-                    engineMeta = this.warehouse.getPartMetadata(enginePartName),
-                    engineMesh = this.scene.getMeshByName(this.vehicleEngine);
-
-                //var exhaust = new EngineExhaust(this.scene, engineMesh);
-                var exhaust = new EngineExhaust(this.scene, this.scene.getMeshByName("Jupiter_J11"));
             },
             writable: true,
             configurable: true
@@ -833,4 +874,4 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
-},{"../PartsWarehouse":1,"../fx/EngineExhaust":3}]},{},[2]);
+},{"../PartsWarehouse":1,"../Vehicle":2}]},{},[3]);
