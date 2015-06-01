@@ -12,6 +12,12 @@ class EngineExhaust {
         });
     }
 
+    stop() {
+        this.particles.forEach(function(particleSystem) {
+            particleSystem.stop();
+        });
+    }
+
     mainExhaust(scene, engineMesh) {
         var particleSystem = new BABYLON.ParticleSystem("mainExhaust", 5000, scene);
         particleSystem.particleTexture = new BABYLON.Texture("../textures/particles/flare.png", scene);

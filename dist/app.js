@@ -122,13 +122,27 @@ var _prototypeProperties = function (child, staticProps, instanceProps) { if (st
 var _classCallCheck = function (instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } };
 
 var EngineExhaust = require("./fx/EngineExhaust").EngineExhaust;
+
+
+var Situations = {
+    PRELAUNCH: 0,
+    FLYING: 1,
+    LANDED: 2,
+    SPLASHED: 3,
+    SUBORBITAL: 4,
+    ORBITING: 5,
+    ESCAPING: 6,
+    DOCKED: 7
+};
+
 var Vehicle = (function () {
     function Vehicle(config) {
         _classCallCheck(this, Vehicle);
 
         this.config = config;
-        this.parts = {};
+        this.parts = [];
         this.exhaust = null;
+        this.situation = Situations.PRELAUNCH;
     }
 
     _prototypeProperties(Vehicle, null, {
@@ -137,20 +151,56 @@ var Vehicle = (function () {
                 this.instantiateParts(warehouse);
                 this.assembleParts();
                 this.attachEngineExhaust(scene);
+                scene.createCompoundImpostor({
+                    mass: 2, friction: 0.4, restitution: 0.3, parts: this.parts
+                });
+            },
+            writable: true,
+            configurable: true
+        },
+        update: {
+            value: function update() {
+                if (this.situation === Situations.FLYING) this.applyThrust();
+            },
+            writable: true,
+            configurable: true
+        },
+        toggleThrust: {
+            value: function toggleThrust() {
+                this.situation === Situations.FLYING ? this.cutoff() : this.ignite();
             },
             writable: true,
             configurable: true
         },
         ignite: {
             value: function ignite() {
+                this.situation = Situations.FLYING;
                 this.exhaust.start();
+            },
+            writable: true,
+            configurable: true
+        },
+        cutoff: {
+            value: function cutoff() {
+                this.situation = Situations.SUBORBITAL;
+                this.exhaust.stop();
             },
             writable: true,
             configurable: true
         },
         attachEngineExhaust: {
             value: function attachEngineExhaust(scene) {
-                this.exhaust = new EngineExhaust(scene, this.parts.Jupiter_J11.mesh);
+                this.exhaust = new EngineExhaust(scene, this.parts[1].mesh);
+            },
+            writable: true,
+            configurable: true
+        },
+        applyThrust: {
+            value: function applyThrust() {
+                var thrustPlateTank = this.parts[1].mesh,
+                    thrustPlatePosition = thrustPlateTank.position;
+                console.log(thrustPlateTank);
+                thrustPlateTank.applyImpulse(new BABYLON.Vector3(0, 2, 0), thrustPlatePosition);
             },
             writable: true,
             configurable: true
@@ -160,13 +210,15 @@ var Vehicle = (function () {
                 this.config.parts.forEach(function (part) {
                     part.meta = warehouse.getPartMetadata(part.part), part.mesh = warehouse.getPartClone(part.part, part.name);
 
+                    part.impostor = BABYLON.PhysicsEngine.BoxImpostor;
+
                     part.mesh.position.x = 0;
                     part.mesh.position.y = 0;
                     part.mesh.position.z = 0;
 
                     part.mesh.visibility = 1;
 
-                    this.parts[part.name] = part;
+                    this.parts.push(part);
                 }, this);
             },
             writable: true,
@@ -174,12 +226,12 @@ var Vehicle = (function () {
         },
         assembleParts: {
             value: function assembleParts() {
-                this.config.parts.forEach(function (cfg) {
+                this.config.parts.forEach(function (cfg, idx) {
                     if (cfg.link === undefined) return;
                     ["top", "bottom"].forEach(function (placement) {
                         if (cfg.link[placement]) {
-                            var part = this.parts[cfg.name],
-                                childPart = this.parts[cfg.link[placement]];
+                            var part = this.getPartByID(cfg.name),
+                                childPart = this.getPartByID(cfg.link[placement]);
 
                             childPart.mesh.parent = part.mesh;
                             switch (placement) {
@@ -190,6 +242,15 @@ var Vehicle = (function () {
                         }
                     }, this);
                 }, this);
+            },
+            writable: true,
+            configurable: true
+        },
+        getPartByID: {
+            value: function getPartByID(id) {
+                return this.parts.filter(function (part) {
+                    return part.name === id;
+                }).shift();
             },
             writable: true,
             configurable: true
@@ -266,6 +327,15 @@ var EngineExhaust = (function () {
             value: function start() {
                 this.particles.forEach(function (particleSystem) {
                     particleSystem.start();
+                });
+            },
+            writable: true,
+            configurable: true
+        },
+        stop: {
+            value: function stop() {
+                this.particles.forEach(function (particleSystem) {
+                    particleSystem.stop();
                 });
             },
             writable: true,
@@ -755,7 +825,10 @@ var VehicleView = (function () {
         _classCallCheck(this, VehicleView);
 
         this.engine = engine;
+        this.canvas = canvas;
+
         this.scene = new BABYLON.Scene(engine);
+        this.scene.enablePhysics(new BABYLON.Vector3(0, -10, 0), new BABYLON.OimoJSPlugin());
 
         this.warehouse = new PartsWarehouse();
         this.vehicle = new Vehicle({
@@ -777,34 +850,52 @@ var VehicleView = (function () {
                 part: "Jupiter_H1"
             }]
         });
-
-        var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), this.scene);
-        // This attaches the camera to the canvas
-        camera.attachControl(canvas, true);
     }
 
     _prototypeProperties(VehicleView, null, {
         setup: {
             value: function setup() {
-                var scene = this.scene,
-                    vehicle = this.vehicle,
-                    warehouse = this.warehouse;
-
-                warehouse.loadIntoScene(scene, function () {
-                    vehicle.assemble(scene, warehouse);
-                    vehicle.ignite();
+                var that = this;
+                this.warehouse.loadIntoScene(this.scene, function () {
+                    that.realSetup();
                 });
+            },
+            writable: true,
+            configurable: true
+        },
+        realSetup: {
+            value: function realSetup() {
+                var scene = this.scene,
+                    canvas = this.canvas,
+                    vehicle = this.vehicle;
 
-                // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+                var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), scene);
+                camera.attachControl(canvas, true);
+
+
                 var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-                // Default intensity is 1. Let's dim the light a small amount
                 light.intensity = 0.7;
 
                 this.addAxis(scene);
                 this.addSkydome(scene);
                 this.addLaunchpad(scene);
 
-                //scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.OimoJSPlugin());
+                vehicle.assemble(scene, this.warehouse);
+
+                scene.registerBeforeRender(function () {
+                    vehicle.update();
+                    camera.target = vehicle.parts[0].mesh.position;
+                });
+
+                document.addEventListener("keypress", function (e) {
+                    console.log(e.charCode);
+                    switch (e.charCode) {
+                        case 32:
+                            // SPACE
+                            vehicle.toggleThrust();
+                            break;
+                    }
+                });
 
                 this.engine.runRenderLoop(function () {
                     scene.render();
@@ -853,6 +944,8 @@ var VehicleView = (function () {
                 g.scaling.y = 0.01;
 
                 g.material = mat;
+
+                g.setPhysicsState({ impostor: BABYLON.PhysicsEngine.BoxImpostor, move: false });
             },
             writable: true,
             configurable: true

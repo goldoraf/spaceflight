@@ -4,7 +4,10 @@ import {PartsWarehouse} from '../PartsWarehouse';
 class VehicleView {
     constructor(engine, canvas) {
         this.engine = engine;
+        this.canvas = canvas;
+        
         this.scene = new BABYLON.Scene(engine);
+        this.scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.OimoJSPlugin());
 
         this.warehouse = new PartsWarehouse();
         this.vehicle = new Vehicle({
@@ -30,32 +33,46 @@ class VehicleView {
                 }
             ]
         });
-
-        var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), this.scene);
-        // This attaches the camera to the canvas
-        camera.attachControl(canvas, true);
     }
 
     setup() {
+        var that = this;
+        this.warehouse.loadIntoScene(this.scene, function() {
+            that.realSetup();
+        });        
+    }
+
+    realSetup() {
         var scene = this.scene,
-            vehicle = this.vehicle,
-            warehouse = this.warehouse;
+            canvas = this.canvas,
+            vehicle = this.vehicle;
 
-        warehouse.loadIntoScene(scene, function() {
-            vehicle.assemble(scene, warehouse);
-            vehicle.ignite();
-        });
+        var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), scene);
+        camera.attachControl(canvas, true);
 
-        // This creates a light, aiming 0,1,0 - to the sky (non-mesh)
+
         var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
-        // Default intensity is 1. Let's dim the light a small amount
         light.intensity = 0.7;
 
         this.addAxis(scene);
         this.addSkydome(scene);
         this.addLaunchpad(scene);
 
-        //scene.enablePhysics(new BABYLON.Vector3(0,-10,0), new BABYLON.OimoJSPlugin());
+        vehicle.assemble(scene, this.warehouse);
+
+        scene.registerBeforeRender(function() {
+            vehicle.update();
+            camera.target = vehicle.parts[0].mesh.position;
+        });
+
+        document.addEventListener('keypress', function(e) {
+            console.log(e.charCode);
+            switch (e.charCode) {
+                case 32: // SPACE
+                    vehicle.toggleThrust();
+                    break;
+            }
+        });
 
         this.engine.runRenderLoop(function() {
             scene.render();
@@ -104,6 +121,8 @@ class VehicleView {
         g.scaling.y = 0.01;
 
         g.material = mat;
+
+        g.setPhysicsState({ impostor: BABYLON.PhysicsEngine.BoxImpostor, move:false });
     }
 
     teardown() {
