@@ -151,6 +151,22 @@ var Vehicle = (function () {
                 this.instantiateParts(warehouse);
                 this.assembleParts();
                 this.attachEngineExhaust(scene);
+            },
+            writable: true,
+            configurable: true
+        },
+        putOnLaunchpad: {
+            value: function putOnLaunchpad() {
+                var rootMesh = this.getRootPart().mesh,
+                    bbox = this.getBoundingBox();
+
+                rootMesh.position = new BABYLON.Vector3(0, -bbox.minimumWorld.y + 1, 0);
+            },
+            writable: true,
+            configurable: true
+        },
+        enablePhysics: {
+            value: function enablePhysics(scene) {
                 scene.createCompoundImpostor({
                     mass: 2, friction: 0.4, restitution: 0.3, parts: this.parts
                 });
@@ -197,9 +213,9 @@ var Vehicle = (function () {
         },
         applyThrust: {
             value: function applyThrust() {
-                var thrustPlateTank = this.parts[1].mesh,
+                var thrustPlateTank = this.parts[0].mesh,
                     thrustPlatePosition = thrustPlateTank.position;
-                console.log(thrustPlateTank);
+
                 thrustPlateTank.applyImpulse(new BABYLON.Vector3(0, 2, 0), thrustPlatePosition);
             },
             writable: true,
@@ -212,10 +228,7 @@ var Vehicle = (function () {
 
                     part.impostor = BABYLON.PhysicsEngine.BoxImpostor;
 
-                    part.mesh.position.x = 0;
-                    part.mesh.position.y = 0;
-                    part.mesh.position.z = 0;
-
+                    part.mesh.position = new BABYLON.Vector3(0, 0, 0);
                     part.mesh.visibility = 1;
 
                     this.parts.push(part);
@@ -226,22 +239,33 @@ var Vehicle = (function () {
         },
         assembleParts: {
             value: function assembleParts() {
-                this.config.parts.forEach(function (cfg, idx) {
-                    if (cfg.link === undefined) return;
-                    ["top", "bottom"].forEach(function (placement) {
-                        if (cfg.link[placement]) {
-                            var part = this.getPartByID(cfg.name),
-                                childPart = this.getPartByID(cfg.link[placement]);
+                this.parts[1].mesh.parent = this.parts[0].mesh;
+                this.parts[1].mesh.position.y = -4.5;
+                this.parts[2].mesh.parent = this.parts[0].mesh;
+                this.parts[2].mesh.position.y = -9;
+                // this.config.parts.forEach(function(cfg, idx) {
+                //     if (cfg.link === undefined) return;
+                //     ['top', 'bottom'].forEach(function(placement) {
+                //         if (cfg.link[placement]) {
+                //             var part = this.getPartByID(cfg.name),
+                //                 childPart = this.getPartByID(cfg.link[placement]);
 
-                            childPart.mesh.parent = part.mesh;
-                            switch (placement) {
-                                case "bottom":
-                                    childPart.mesh.position.y = part.meta.nodes.bottom[1] - childPart.meta.nodes.top[1];
-                                    break;
-                            }
-                        }
-                    }, this);
-                }, this);
+                //             childPart.mesh.parent = this.getRootPart().mesh;
+                //             switch(placement) {
+                //                 case 'bottom':
+                //                     childPart.mesh.position.y = part.mesh.position.y + part.meta.nodes.bottom[1] + childPart.meta.nodes.top[1];
+                //                     break;
+                //             }
+                //         }
+                //     }, this);
+                // }, this);
+            },
+            writable: true,
+            configurable: true
+        },
+        getRootPart: {
+            value: function getRootPart() {
+                return this.parts[0];
             },
             writable: true,
             configurable: true
@@ -251,6 +275,39 @@ var Vehicle = (function () {
                 return this.parts.filter(function (part) {
                     return part.name === id;
                 }).shift();
+            },
+            writable: true,
+            configurable: true
+        },
+        getBoundingBox: {
+            value: function getBoundingBox() {
+                var boundingBoxes = this.parts.map(function (p) {
+                    return p.mesh.getBoundingInfo().boundingBox;
+                });
+                return {
+                    minimumWorld: {
+                        x: Math.min.apply(null, boundingBoxes.map(function (b) {
+                            return b.minimumWorld.x;
+                        })),
+                        y: Math.min.apply(null, boundingBoxes.map(function (b) {
+                            return b.minimumWorld.y;
+                        })),
+                        z: Math.min.apply(null, boundingBoxes.map(function (b) {
+                            return b.minimumWorld.z;
+                        }))
+                    },
+                    maximumWorld: {
+                        x: Math.max.apply(null, boundingBoxes.map(function (b) {
+                            return b.maximumWorld.x;
+                        })),
+                        y: Math.max.apply(null, boundingBoxes.map(function (b) {
+                            return b.maximumWorld.y;
+                        })),
+                        z: Math.max.apply(null, boundingBoxes.map(function (b) {
+                            return b.maximumWorld.z;
+                        }))
+                    }
+                };
             },
             writable: true,
             configurable: true
@@ -847,7 +904,7 @@ var VehicleView = (function () {
                 }
             }, {
                 name: "Jupiter_H11",
-                part: "Jupiter_H1"
+                part: "Jupiter_CommandModule"
             }]
         });
     }
@@ -872,7 +929,6 @@ var VehicleView = (function () {
                 var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), scene);
                 camera.attachControl(canvas, true);
 
-
                 var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
                 light.intensity = 0.7;
 
@@ -881,10 +937,12 @@ var VehicleView = (function () {
                 this.addLaunchpad(scene);
 
                 vehicle.assemble(scene, this.warehouse);
+                vehicle.putOnLaunchpad();
+                vehicle.enablePhysics(scene);
 
                 scene.registerBeforeRender(function () {
                     vehicle.update();
-                    camera.target = vehicle.parts[0].mesh.position;
+                    camera.target = vehicle.getRootPart().mesh.position;
                 });
 
                 document.addEventListener("keypress", function (e) {
@@ -940,8 +998,8 @@ var VehicleView = (function () {
                 mat.specularColor = BABYLON.Color3.Black();
 
                 var g = BABYLON.Mesh.CreateBox("ground", 400, scene);
-                g.position.y = -12;
                 g.scaling.y = 0.01;
+                g.position.y = -2;
 
                 g.material = mat;
 

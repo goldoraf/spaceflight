@@ -29,7 +29,7 @@ class VehicleView {
                 },
                 {
                     name: 'Jupiter_H11',
-                    part: 'Jupiter_H1'
+                    part: 'Jupiter_CommandModule'
                 }
             ]
         });
@@ -50,7 +50,6 @@ class VehicleView {
         var camera = new BABYLON.ArcRotateCamera("ArcRotateCamera", 1, 0.8, 20, new BABYLON.Vector3(0, 0, 0), scene);
         camera.attachControl(canvas, true);
 
-
         var light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(0, 1, 0), scene);
         light.intensity = 0.7;
 
@@ -59,10 +58,12 @@ class VehicleView {
         this.addLaunchpad(scene);
 
         vehicle.assemble(scene, this.warehouse);
+        vehicle.putOnLaunchpad();
+        vehicle.enablePhysics(scene);
 
         scene.registerBeforeRender(function() {
             vehicle.update();
-            camera.target = vehicle.parts[0].mesh.position;
+            camera.target = vehicle.getRootPart().mesh.position;
         });
 
         document.addEventListener('keypress', function(e) {
@@ -117,8 +118,8 @@ class VehicleView {
         mat.specularColor = BABYLON.Color3.Black();
 
         var g = BABYLON.Mesh.CreateBox("ground", 400, scene);
-        g.position.y = -12;
         g.scaling.y = 0.01;
+        g.position.y = -2;
 
         g.material = mat;
 
